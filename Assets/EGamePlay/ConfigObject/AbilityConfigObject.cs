@@ -44,12 +44,12 @@ namespace EGamePlay.Combat
         public SkillTargetSelectType TargetSelectType;
 
         [LabelText("触发点"), Space(30)]
-        [ListDrawerSettings(DefaultExpandedState = true, DraggableItems = true, ShowItemCount = false, CustomAddFunction = "AddTrigger")]
+        [ListDrawerSettings(DraggableItems = true, ShowItemCount = false, CustomAddFunction = "AddTrigger")]
         [HideReferenceObjectPicker]
         public List<TriggerConfig> TriggerActions = new List<TriggerConfig>();
 
         [LabelText("效果列表"), Space(30)]
-        [ListDrawerSettings(DefaultExpandedState = true, DraggableItems = true, ShowItemCount = false, HideAddButton = true)]
+        [ListDrawerSettings( DraggableItems = true, ShowItemCount = false, HideAddButton = true)]
         [HideReferenceObjectPicker]
         public List<Effect> Effects = new List<Effect>();
 

@@ -38,6 +38,8 @@ public sealed class Hero : MonoBehaviour
     public bool SkillPlaying { get; set; }
 
 
+    public AbilityConfigObject InitAddSkill;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -51,6 +53,7 @@ public sealed class Hero : MonoBehaviour
         {
             CombatEntity.AddComponent<SpellPreviewComponent>();
         }
+
         //CombatEntity.AddComponent<EquipmentComponent>();
         CombatEntity.ListenActionPoint(ActionPointType.PreSpell, OnPreSpell);
         CombatEntity.ListenActionPoint(ActionPointType.PostSpell, OnPostSpell);
@@ -61,39 +64,42 @@ public sealed class Hero : MonoBehaviour
         CombatEntity.Subscribe<AnimationClip>(OnPlayAnimation);
         CombatEntity.CurrentHealth.Minus(30000);
 
-        var allConfigs = ConfigHelper.GetAll<AbilityConfig>().Values.ToArray();
-        for (int i = 0; i < allConfigs.Length; i++)
-        {
-            var config = allConfigs[i];
-            if (config.Type != "Skill")
-            {
-                continue;
-            }
-            var skilld = config.Id;
-            if (skilld == 3001)
-            {
-                continue;
-            }
-            //if (skilld != 1001)
-            //{
-            //    continue;
-            //}
-            var configObj = GameUtils.AssetUtils.LoadObject<AbilityConfigObject>($"{AbilityManagerObject.SkillResFolder}/Skill_{skilld}");
-            var ability = CombatEntity.GetComponent<SkillComponent>().AttachSkill(configObj);
-            if (skilld == 1001) CombatEntity.BindSkillInput(ability, KeyCode.Q);
-            if (skilld == 1002) CombatEntity.BindSkillInput(ability, KeyCode.W);
-            if (skilld == 1003) CombatEntity.BindSkillInput(ability, KeyCode.Y);
-            if (skilld == 1004) CombatEntity.BindSkillInput(ability, KeyCode.E);
-            if (skilld == 1005) CombatEntity.BindSkillInput(ability, KeyCode.R);
-            if (skilld == 1006)
-            {
-                CombatEntity.BindSkillInput(ability, KeyCode.T);
-                ability.AddComponent<Skill1006Component>();
-            }
-            if (skilld == 1008) CombatEntity.BindSkillInput(ability, KeyCode.A);
-            if (skilld == 2001) CombatEntity.BindSkillInput(ability, KeyCode.S);
-        }
+        // var allConfigs = ConfigHelper.GetAll<AbilityConfig>().Values.ToArray();
+        // for (int i = 0; i < allConfigs.Length; i++)
+        // {
+        //     var config = allConfigs[i];
+        //     if (config.Type != "Skill")
+        //     {
+        //         continue;
+        //     }
+        //     var skilld = config.Id;
+        //     if (skilld == 3001)
+        //     {
+        //         continue;
+        //     }
+        //     //if (skilld != 1001)
+        //     //{
+        //     //    continue;
+        //     //}
+        //     var configObj = GameUtils.AssetUtils.LoadObject<AbilityConfigObject>($"{AbilityManagerObject.SkillResFolder}/Skill_{skilld}");
+        //     var ability = CombatEntity.GetComponent<SkillComponent>().AttachSkill(configObj);
+        //     if (skilld == 1001) CombatEntity.BindSkillInput(ability, KeyCode.Q);
+        //     if (skilld == 1002) CombatEntity.BindSkillInput(ability, KeyCode.W);
+        //     if (skilld == 1003) CombatEntity.BindSkillInput(ability, KeyCode.Y);
+        //     if (skilld == 1004) CombatEntity.BindSkillInput(ability, KeyCode.E);
+        //     if (skilld == 1005) CombatEntity.BindSkillInput(ability, KeyCode.R);
+        //     if (skilld == 1006)
+        //     {
+        //         CombatEntity.BindSkillInput(ability, KeyCode.T);
+        //         ability.AddComponent<Skill1006Component>();
+        //     }
+        //     if (skilld == 1008) CombatEntity.BindSkillInput(ability, KeyCode.A);
+        //     if (skilld == 2001) CombatEntity.BindSkillInput(ability, KeyCode.S);
+        // }
 //#endif
+
+        var ability = CombatEntity.GetComponent<SkillComponent>().AttachSkill(InitAddSkill);
+        CombatEntity.BindSkillInput(ability, KeyCode.Q);
 
         CombatEntity.GetComponent<SpellComponent>().LoadExecutionObjects();
 
@@ -173,7 +179,10 @@ public sealed class Hero : MonoBehaviour
             {
                 var time = Vector3.Distance(transform.position, point) * MoveSpeed * 0.5f;
                 StopMove();
-                MoveTweener = transform.DOMove(point, time).SetEase(Ease.Linear).OnComplete(() => { AnimationComponent.PlayFade(AnimationComponent.IdleAnimation); });
+                MoveTweener = transform.DOMove(point, time).SetEase(Ease.Linear).OnComplete(() =>
+                {
+                    AnimationComponent.PlayFade(AnimationComponent.IdleAnimation);
+                });
                 LookAtTweener = transform.GetChild(0).DOLookAt(point, 0.2f);
                 AnimationComponent.PlayFade(AnimationComponent.RunAnimation);
             }
@@ -185,12 +194,15 @@ public sealed class Hero : MonoBehaviour
         var spellAction = combatAction as SpellAction;
         if (spellAction.InputTarget != null)
         {
-            CombatEntity.ModelTrans.localRotation = Quaternion.LookRotation(spellAction.InputTarget.Position - CombatEntity.ModelTrans.position);
+            CombatEntity.ModelTrans.localRotation =
+                Quaternion.LookRotation(spellAction.InputTarget.Position - CombatEntity.ModelTrans.position);
         }
         else
         {
-            CombatEntity.ModelTrans.localRotation = Quaternion.LookRotation(spellAction.InputPoint - CombatEntity.ModelTrans.position);
+            CombatEntity.ModelTrans.localRotation =
+                Quaternion.LookRotation(spellAction.InputPoint - CombatEntity.ModelTrans.position);
         }
+
         DisableMove();
 
         if (spellAction.SkillExecution != null)
@@ -369,6 +381,7 @@ public sealed class Hero : MonoBehaviour
     }
 
     private ETCancellationToken token;
+
     public async ETTask PlayThenIdleAsync(AnimationClip animation)
     {
         AnimationComponent.Play(AnimationComponent.IdleAnimation);
@@ -377,6 +390,7 @@ public sealed class Hero : MonoBehaviour
         {
             token.Cancel();
         }
+
         token = new ETCancellationToken();
         var isTimeout = await TimerManager.Instance.WaitAsync((int)(animation.length * 1000), token);
         if (isTimeout)

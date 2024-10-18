@@ -188,9 +188,9 @@ namespace EGamePlay.Combat
 			timeline.AddSegment();
 		}
 
-		protected override void OnImGUI()
+		protected override void OnGUI()
         {
-			base.OnImGUI();
+			base.OnGUI();
 			DrawStateList();
 			var currentEvent = Event.current;
 
