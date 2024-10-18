@@ -3,10 +3,15 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#if EGAMEPLAY_ET
+using Unity.Mathematics;
+using Vector3 = Unity.Mathematics.float3;
+using Quaternion = Unity.Mathematics.quaternion;
+#endif
 
 namespace EGamePlay.Combat
 {
-    public class EntityDeadEvent { public CombatEntity DeadEntity; }
+    public class EntityDeadEvent { public Entity DeadEntity; }
 
     /// <summary>
     /// 战斗实体
@@ -15,11 +20,11 @@ namespace EGamePlay.Combat
     {
         public GameObject HeroObject { get; set; }
         public Transform ModelTrans { get; set; }
-        public HealthPoint CurrentHealth { get; private set; }
+        public HealthPointComponent CurrentHealth { get; private set; }
 
         //效果赋给行动能力
         public EffectAssignAbility EffectAssignAbility { get; private set; }
-        //施法技能行动能力
+        //施法行动能力
         public SpellActionAbility SpellAbility { get; private set; }
         //移动行动能力
         public MotionActionAbility MotionAbility { get; private set; }
@@ -30,23 +35,24 @@ namespace EGamePlay.Combat
         //施加状态行动能力
         public AddStatusActionAbility AddStatusAbility { get; private set; }
         //施法普攻行动能力
-        public AttackActionAbility SpellAttackAbility { get; private set; }
+        public AttackActionAbility AttackSpellAbility { get; private set; }
         //回合行动能力
         public RoundActionAbility RoundAbility { get; private set; }
         //起跳行动能力
         public JumpToActionAbility JumpToAbility { get; private set; }
+        public CollisionActionAbility CollisionAbility { get; private set; }
 
         //普攻能力
-        public AttackAbility AttackAbility { get; set; }
+        //public AttackAbility AttackAbility { get; set; }
+        //普攻格挡能力
         public AttackBlockActionAbility AttackBlockAbility { get; set; }
 
         //执行中的执行体
-        public SkillExecution SpellingExecution { get; set; }
-        public Dictionary<string, SkillAbility> NameSkills { get; set; } = new Dictionary<string, SkillAbility>();
-        public Dictionary<int, SkillAbility> IdSkills { get; set; } = new Dictionary<int, SkillAbility>();
-        public Dictionary<KeyCode, SkillAbility> InputSkills { get; set; } = new Dictionary<KeyCode, SkillAbility>();
-        public Dictionary<string, List<StatusAbility>> TypeIdStatuses { get; set; } = new Dictionary<string, List<StatusAbility>>();
-        //public Dictionary<Type, List<StatusAbility>> TypeStatuses { get; set; } = new Dictionary<Type, List<StatusAbility>>();
+        public AbilityExecution SpellingExecution { get; set; }
+        //public Dictionary<string, SkillAbility> NameSkills { get; set; } = new Dictionary<string, SkillAbility>();
+        //public Dictionary<int, SkillAbility> IdSkills { get; set; } = new Dictionary<int, SkillAbility>();
+        //public Dictionary<KeyCode, SkillAbility> InputSkills { get; set; } = new Dictionary<KeyCode, SkillAbility>();
+        //public Dictionary<string, List<StatusAbility>> TypeIdStatuses { get; set; } = new Dictionary<string, List<StatusAbility>>();
         public Vector3 Position { get; set; }
         public Quaternion Rotation { get; set; }
         /// 行为禁制
@@ -57,20 +63,21 @@ namespace EGamePlay.Combat
 
         public override void Awake()
         {
-            AddComponent<AttributeComponent>();
+            AddComponent<AttributeComponent>().InitializeCharacter();
             AddComponent<ActionPointComponent>();
-            AddComponent<ConditionComponent>();
+            AddComponent<AbilityComponent>();
+            //AddComponent<ConditionEventComponent>();
             AddComponent<StatusComponent>();
             AddComponent<SkillComponent>();
             AddComponent<SpellComponent>();
             AddComponent<MotionComponent>();
-            CurrentHealth = AddChild<HealthPoint>();
+            CurrentHealth = AddComponent<HealthPointComponent>();
             CurrentHealth.HealthPointNumeric = GetComponent<AttributeComponent>().HealthPoint;
             CurrentHealth.HealthPointMaxNumeric = GetComponent<AttributeComponent>().HealthPointMax;
             CurrentHealth.Reset();
 
-            AttackAbility = AttachAbility<AttackAbility>(null);
-            AttackBlockAbility = AttachAction<AttackBlockActionAbility>();
+            //AttackAbility = GetComponent<AbilityComponent>().AttachAbility<AttackAbility>(null);
+            //AttackBlockAbility = AttachAction<AttackBlockActionAbility>();
 
             EffectAssignAbility = AttachAction<EffectAssignAbility>();
             SpellAbility = AttachAction<SpellActionAbility>();
@@ -78,9 +85,10 @@ namespace EGamePlay.Combat
             DamageAbility = AttachAction<DamageActionAbility>();
             CureAbility = AttachAction<CureActionAbility>();
             AddStatusAbility = AttachAction<AddStatusActionAbility>();
-            SpellAttackAbility = AttachAction<AttackActionAbility>();
+            AttackSpellAbility = AttachAction<AttackActionAbility>();
             RoundAbility = AttachAction<RoundActionAbility>();
             JumpToAbility = AttachAction<JumpToActionAbility>();
+            CollisionAbility = AttachAction<CollisionActionAbility>();
         }
 
         #region 行动点事件
@@ -100,45 +108,16 @@ namespace EGamePlay.Combat
         }
         #endregion
 
-        #region 条件事件
-        public void ListenerCondition(ConditionType conditionType, Action action, object paramObj = null)
-        {
-            GetComponent<ConditionComponent>().AddListener(conditionType, action, paramObj);
-        }
-
-        public void UnListenCondition(ConditionType conditionType, Action action)
-        {
-            GetComponent<ConditionComponent>().RemoveListener(conditionType, action);
-        }
-        #endregion
-
-        public void ReceiveDamage(IActionExecution combatAction)
-        {
-            var damageAction = combatAction as DamageAction;
-            CurrentHealth.Minus(damageAction.DamageValue);
-        }
-
-        public void ReceiveCure(IActionExecution combatAction)
-        {
-            var cureAction = combatAction as CureAction;
-            CurrentHealth.Add(cureAction.CureValue);
-        }
-
-        public bool CheckDead()
-        {
-            return CurrentHealth.Value <= 0;
-        }
-
-        /// <summary>
-        /// 挂载能力，技能、被动、buff等都通过这个接口挂载
-        /// </summary>
-        /// <param name="configObject"></param>
-        public T AttachAbility<T>(object configObject) where T : Entity, IAbilityEntity
-        {
-            var ability = this.AddChild<T>(configObject);
-            ability.AddComponent<AbilityLevelComponent>();
-            return ability;
-        }
+        ///// <summary>
+        ///// 挂载能力，技能、被动、buff等都通过这个接口挂载
+        ///// </summary>
+        ///// <param name="configObject"></param>
+        //public T AttachAbility<T>(object configObject) where T : Entity, IAbilityEntity
+        //{
+        //    var ability = this.AddChild<T>(configObject);
+        //    ability.AddComponent<AbilityLevelComponent>();
+        //    return ability;
+        //}
 
         public T AttachAction<T>() where T : Entity, IActionAbility
         {
@@ -150,38 +129,29 @@ namespace EGamePlay.Combat
             return action;
         }
 
-        public SkillAbility AttachSkill(object configObject)
-        {
-            var skill = AttachAbility<SkillAbility>(configObject);
-            NameSkills.Add(skill.SkillConfig.Name, skill);
-            IdSkills.Add(skill.SkillConfig.Id, skill);
-            return skill;
-        }
+        //public Ability AttachSkill(object configObject)
+        //{
+        //    var abilityComp = GetComponent<AbilityComponent>();
+        //    var skill = abilityComp.AttachAbility<Ability>(configObject);
+        //    abilityComp.NameSkills.Add(skill.Config.Name, skill);
+        //    abilityComp.IdSkills.Add(skill.Config.Id, skill);
+        //    return skill;
+        //}
 
-        public StatusAbility AttachStatus(object configObject)
+        public Ability AttachStatus(object configObject)
         {
             return GetComponent<StatusComponent>().AttachStatus(configObject);
         }
 
-        public void OnStatusRemove(StatusAbility statusAbility)
-        {
-            GetComponent<StatusComponent>().OnStatusRemove(statusAbility);
-        }
+        //public void OnStatusRemove(StatusAbility statusAbility)
+        //{
+        //    GetComponent<StatusComponent>().OnStatusRemove(statusAbility);
+        //}
 
-        public void BindSkillInput(SkillAbility abilityEntity, KeyCode keyCode)
+        public void BindSkillInput(Ability abilityEntity, KeyCode keyCode)
         {
-            InputSkills.Add(keyCode, abilityEntity);
+            GetComponent<SkillComponent>().InputSkills.Add(keyCode, abilityEntity);
             abilityEntity.TryActivateAbility();
-        }
-
-        public bool HasStatus(string statusTypeId)
-        {
-            return GetComponent<StatusComponent>().TypeIdStatuses.ContainsKey(statusTypeId);
-        }
-
-        public StatusAbility GetStatus(string statusTypeId)
-        {
-            return GetComponent<StatusComponent>().TypeIdStatuses[statusTypeId][0];
         }
 
         #region 回合制战斗
@@ -218,8 +188,8 @@ namespace EGamePlay.Combat
 
     public class RemoveStatusEvent
     {
-        public CombatEntity CombatEntity { get; set; }
-        public StatusAbility Status { get; set; }
+        public Entity Entity { get; set; }
+        public Ability Status { get; set; }
         public long StatusId { get; set; }
     }
 }

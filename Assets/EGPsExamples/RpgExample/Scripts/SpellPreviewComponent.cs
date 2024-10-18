@@ -15,55 +15,61 @@ public class SpellPreviewComponent : EGamePlay.Component
     private SpellComponent SpellComponent => Entity.GetComponent<SpellComponent>();
     public override bool DefaultEnable { get; set; } = true;
     private bool Previewing { get; set; }
-    private SkillAbility PreviewingSkill { get; set; }
+    private Ability PreviewingSkill { get; set; }
 
 
     public override void Update()
     {
+        var abilityComp = OwnerEntity.GetComponent<SkillComponent>();
         if (Input.GetKeyDown(KeyCode.Q))
         {
             Cursor.visible = false;
-            PreviewingSkill = OwnerEntity.InputSkills[KeyCode.Q];
+            PreviewingSkill = abilityComp.InputSkills[KeyCode.Q];
             EnterPreview();
         }
         if (Input.GetKeyDown(KeyCode.W))
         {
             Cursor.visible = false;
-            PreviewingSkill = OwnerEntity.InputSkills[KeyCode.W];
+            PreviewingSkill = abilityComp.InputSkills[KeyCode.W];
             EnterPreview();
         }
         if (Input.GetKeyDown(KeyCode.E))
         {
             Cursor.visible = false;
-            PreviewingSkill = OwnerEntity.InputSkills[KeyCode.E];
+            PreviewingSkill = abilityComp.InputSkills[KeyCode.E];
             EnterPreview();
         }
-#if !EGAMEPLAY_EXCEL
+//#if !EGAMEPLAY_EXCEL
         if (Input.GetKeyDown(KeyCode.R))
         {
             Cursor.visible = false;
-            PreviewingSkill = OwnerEntity.InputSkills[KeyCode.R];
+            PreviewingSkill = abilityComp.InputSkills[KeyCode.R];
             EnterPreview();
         }
         if (Input.GetKeyDown(KeyCode.T))
         {
             Cursor.visible = false;
-            PreviewingSkill = OwnerEntity.InputSkills[KeyCode.T];
+            PreviewingSkill = abilityComp.InputSkills[KeyCode.T];
             EnterPreview();
         }
         if (Input.GetKeyDown(KeyCode.Y))
         {
-            PreviewingSkill = OwnerEntity.InputSkills[KeyCode.Y];
+            PreviewingSkill = abilityComp.InputSkills[KeyCode.Y];
             //SpellComp.SpellWithTarget(PreviewingSkill, PreviewingSkill.OwnerEntity);
             EnterPreview();
         }
         if (Input.GetKeyDown(KeyCode.A))
         {
             Cursor.visible = false;
-            PreviewingSkill = OwnerEntity.InputSkills[KeyCode.A];
+            PreviewingSkill = abilityComp.InputSkills[KeyCode.A];
             EnterPreview();
         }
-#endif
+        if (Input.GetKeyDown(KeyCode.S))
+        {
+            PreviewingSkill = abilityComp.InputSkills[KeyCode.S];
+            OnSelectedSelf();
+        }
+//#endif
         if (Input.GetMouseButtonDown((int)UnityEngine.UIElements.MouseButton.RightMouse))
         {
             CancelPreview();
@@ -79,14 +85,13 @@ public class SpellPreviewComponent : EGamePlay.Component
         Previewing = true;
         var targetSelectType = SkillTargetSelectType.Custom;
         var affectTargetType = SkillAffectTargetType.EnemyTeam;
-        var skillId = PreviewingSkill.SkillConfig.Id;
-#if EGAMEPLAY_EXCEL
-        if (PreviewingSkill.SkillConfig.TargetSelect == "手动指定") targetSelectType = SkillTargetSelectType.PlayerSelect;
-        if (PreviewingSkill.SkillConfig.TargetSelect == "固定区域场检测") targetSelectType = SkillTargetSelectType.AreaSelect;
-#else
-        targetSelectType = PreviewingSkill.SkillConfig.TargetSelectType;
-        affectTargetType = PreviewingSkill.SkillConfig.AffectTargetType;
-#endif
+        var skillId = PreviewingSkill.Config.Id;
+        if (PreviewingSkill.Config.TargetSelect == "手动指定") targetSelectType = SkillTargetSelectType.PlayerSelect;
+        if (PreviewingSkill.Config.TargetSelect == "碰撞检测") targetSelectType = SkillTargetSelectType.CollisionSelect;
+        if (PreviewingSkill.Config.TargetSelect == "条件指定") targetSelectType = SkillTargetSelectType.ConditionSelect;
+        if (PreviewingSkill.Config.TargetGroup == "自身") affectTargetType = SkillAffectTargetType.Self;
+        if (PreviewingSkill.Config.TargetGroup == "己方") affectTargetType = SkillAffectTargetType.SelfTeam;
+        if (PreviewingSkill.Config.TargetGroup == "敌方") affectTargetType = SkillAffectTargetType.EnemyTeam;
         if (targetSelectType == SkillTargetSelectType.PlayerSelect)
         {
             TargetSelectManager.Instance.TargetLimitType = TargetLimitType.EnemyTeam;
@@ -117,6 +122,12 @@ public class SpellPreviewComponent : EGamePlay.Component
         DirectRectSelectManager.Instance?.Hide();
     }
 
+    private void OnSelectedSelf()
+    {
+        CombatEntity combatEntity = Hero.Instance.CombatEntity; ;
+        SpellComponent.SpellWithTarget(PreviewingSkill, combatEntity);
+    }
+
     private void OnSelectedTarget(GameObject selectObject)
     {
         CancelPreview();
@@ -127,7 +138,7 @@ public class SpellPreviewComponent : EGamePlay.Component
         //Hero.Instance.DisableMove();
         SpellComponent.SpellWithTarget(PreviewingSkill, combatEntity);
     }
-    
+
     private void OnInputPoint(Vector3 point)
     {
         //OwnerEntity.ModelTrans.localRotation = Quaternion.LookRotation(point - OwnerEntity.ModelTrans.position);
@@ -140,7 +151,7 @@ public class SpellPreviewComponent : EGamePlay.Component
         OnInputPoint(point);
     }
 
-    public void SelectTargetsWithDistance(SkillAbility SpellSkill, float distance)
+    public void SelectTargetsWithDistance(Ability SpellSkill, float distance)
     {
         if (OwnerEntity.SpellAbility.TryMakeAction(out var action))
         {
@@ -162,7 +173,7 @@ public class SpellPreviewComponent : EGamePlay.Component
             //OwnerEntity.ModelTrans.localRotation = Quaternion.LookRotation(point - OwnerEntity.ModelTrans.position);
             //Hero.Instance.DisableMove();
             action.SkillAbility = SpellSkill;
-            action.SkillExecution = SpellSkill.CreateExecution() as SkillExecution;
+            //action.SkillExecution = SpellSkill.CreateExecution() as SkillExecution;
             action.SpellSkill(false);
         }
     }

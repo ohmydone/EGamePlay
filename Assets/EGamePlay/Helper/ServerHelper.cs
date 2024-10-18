@@ -2,7 +2,45 @@
 using System.Diagnostics;
 using Sirenix.OdinInspector;
 
+#if EGAMEPLAY_ET
+
+#else
+public class JsonIgnoreAttribute : Attribute
+{
+
+}
+#endif
+
 #if NOT_UNITY
+namespace UnityEngine
+{
+    public class Time
+    {
+        public static long FrameEndTime;
+        public static long FrameTime;
+        public static float deltaTime { get; set; } = FrameTime / 1000f;
+
+        public static long GameTime;
+        public static long DeltaTime;
+        public static float unscaledDeltaTime => deltaTime;
+    }
+
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = false, Inherited = true)]
+    public class TooltipAttribute : Attribute
+    {
+        public TooltipAttribute(string tip) { }
+    }
+}
+
+namespace Unity.Plastic.Newtonsoft.Json
+{
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = false, Inherited = true)]
+    public class JsonIgnoreAttribute : Attribute
+    {
+
+    }
+}
+
 namespace Sirenix.OdinInspector
 {
     public class SerializedMonoBehaviour
@@ -143,6 +181,7 @@ namespace Sirenix.OdinInspector
     [Conditional("UNITY_EDITOR")]
     public sealed class ListDrawerSettingsAttribute : Attribute
     {
+        public bool DefaultExpandedState;
         /// <summary>
         /// If true, the add button will not be rendered in the title toolbar. You can use OnTitleBarGUI to implement your own add button.
         /// </summary>
@@ -791,47 +830,6 @@ namespace Sirenix.OdinInspector
     }
 }
 
-[LabelText("碰撞体类型")]
-public enum ColliderType
-{
-    [LabelText("固定位置碰撞体")]
-    FixedPosition,
-    [LabelText("固定朝向碰撞体")]
-    FixedDirection,
-    [LabelText("目标飞行碰撞体")]
-    TargetFly,
-    [LabelText("朝向飞行碰撞体")]
-    ForwardFly,
-}
-
-[LabelText("应用效果")]
-public enum EffectApplyType
-{
-    [LabelText("全部效果")]
-    Effects,
-    [LabelText("效果1")]
-    Effect1,
-    [LabelText("效果2")]
-    Effect2,
-    [LabelText("效果3")]
-    Effect3,
-
-    [LabelText("其他")]
-    Other = 100,
-}
-
-public class ColliderSpawnEmitter
-{
-    [LabelText("碰撞体名称")]
-    public string ColliderName;
-    public ColliderType ColliderType;
-    [LabelText("存活时间")]
-    public float ExistTime;
-    public EffectApplyType EffectApplyType;
-
-    public double time { get; set; }
-}
-
 namespace UnityEngine
 {
     public class GameObject
@@ -897,6 +895,22 @@ namespace UnityEngine
     {
     }
 
+    public sealed class ReadOnlyAttribute : Attribute
+    {
+    }
+
+    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
+    public sealed class FoldoutGroupAttribute : PropertyAttribute
+    {
+        public readonly string tooltip;
+        public string GroupName;
+
+        public FoldoutGroupAttribute(string tooltip)
+        {
+            this.tooltip = tooltip;
+        }
+    }
+
     /// <summary>
     ///   <para>Base class to derive custom property attributes from. Use this to create custom attributes for script variables.</para>
     /// </summary>
@@ -907,6 +921,20 @@ namespace UnityEngine
         ///   <para>Optional field to specify the order that multiple DecorationDrawers should be drawn in.</para>
         /// </summary>
         public int order { get; set; }
+    }
+
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = false, Inherited = true)]
+    public class PropertyOrderAttribute : Attribute
+    {
+        /// <summary>
+        ///   <para>Optional field to specify the order that multiple DecorationDrawers should be drawn in.</para>
+        /// </summary>
+        public int order { get; set; }
+
+        public PropertyOrderAttribute(int order)
+        {
+            this.order = order;
+        }
     }
 
     /// <summary>

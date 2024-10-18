@@ -32,7 +32,7 @@ namespace EGamePlay.Combat
     /// <summary>
     /// 普攻行动
     /// </summary>
-    public class AttackAction : Entity, IActionExecution
+    public class AttackAction : Entity, IActionExecute
     {
         /// 行动能力
         public Entity ActionAbility { get; set; }
@@ -41,8 +41,8 @@ namespace EGamePlay.Combat
         /// 行动实体
         public CombatEntity Creator { get; set; }
         /// 目标对象
-        public CombatEntity Target { get; set; }
-        public AttackExecution AttackExecution { get; set; }
+        public Entity Target { get; set; }
+        //public AttackExecution AttackExecution { get; set; }
 
 
         public void FinishAction()
@@ -54,7 +54,7 @@ namespace EGamePlay.Combat
         private void PreProcess()
         {
             Creator.TriggerActionPoint(ActionPointType.PreGiveAttack, this);
-            Target.TriggerActionPoint(ActionPointType.PreReceiveAttack, this);
+            Target.GetComponent<ActionPointComponent>().TriggerActionPoint(ActionPointType.PreReceiveAttack, this);
         }
 
         public async ETTask ApplyAttackAwait()
@@ -74,16 +74,16 @@ namespace EGamePlay.Combat
 
         public void ApplyAttack()
         {
-            AttackExecution = Creator.AttackAbility.CreateExecution() as AttackExecution;
-            AttackExecution.AttackAction = this;
-            AttackExecution.BeginExecute();
+            //AttackExecution = Creator.AttackAbility.CreateExecution() as AttackExecution;
+            //AttackExecution.AttackAction = this;
+            //AttackExecution.BeginExecute();
         }
 
         //后置处理
         private void PostProcess()
         {
             Creator.TriggerActionPoint(ActionPointType.PostGiveAttack, this);
-            Target.TriggerActionPoint(ActionPointType.PostReceiveAttack, this);
+            Target.GetComponent<ActionPointComponent>().TriggerActionPoint(ActionPointType.PostReceiveAttack, this);
         }
     }
 }

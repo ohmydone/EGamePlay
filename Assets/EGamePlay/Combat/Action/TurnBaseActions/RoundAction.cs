@@ -27,40 +27,12 @@ namespace EGamePlay.Combat
             }
             return Enable;
         }
-
-        //public void TryActivateAbility() => ActivateAbility();
-
-        //public void ActivateAbility() => Enable = true;
-
-        //public void DeactivateAbility() { }
-
-        //public void EndAbility() { }
-
-        //public Entity CreateExecution()
-        //{
-        //    var execution = OwnerEntity.MakeAction<RoundAction>();
-        //    execution.ActionAbility = this;
-        //    return execution;
-        //}
-
-        //public bool TryMakeAction(out RoundAction abilityExecution)
-        //{
-        //    if (Enable == false)
-        //    {
-        //        abilityExecution = null;
-        //    }
-        //    else
-        //    {
-        //        abilityExecution = CreateExecution() as RoundAction;
-        //    }
-        //    return Enable;
-        //}
     }
 
     /// <summary>
     /// 回合行动
     /// </summary>
-    public class RoundAction : Entity, IActionExecution
+    public class RoundAction : Entity, IActionExecute
     {
         public int RoundActionType { get; set; }
 
@@ -71,7 +43,7 @@ namespace EGamePlay.Combat
         /// 行动实体
         public CombatEntity Creator { get; set; }
         /// 目标对象
-        public CombatEntity Target { get; set; }
+        public Entity Target { get; set; }
 
 
         public void FinishAction()

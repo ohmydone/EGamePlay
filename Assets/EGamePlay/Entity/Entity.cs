@@ -39,7 +39,7 @@ namespace EGamePlay
         public Entity()
         {
 #if !NOT_UNITY
-            if (this is MasterEntity) { }
+            if (this is ECSNode) { }
             else if (this.GetType().Name.Contains("OnceWaitTimer")) { }
             else AddComponent<GameObjectComponent>();
 #endif
@@ -96,13 +96,14 @@ namespace EGamePlay
             Parent?.RemoveChild(this);
             foreach (var component in Components.Values)
             {
+                component.Enable = false;
                 Component.Destroy(component);
             }
             Components.Clear();
             InstanceId = 0;
-            if (Master.Entities.ContainsKey(GetType()))
+            if (ECSNode.Entities.ContainsKey(GetType()))
             {
-                Master.Entities[GetType()].Remove(this);
+                ECSNode.Entities[GetType()].Remove(this);
             }
         }
 
@@ -112,7 +113,7 @@ namespace EGamePlay
             return parent as T;
         }
 
-        public T As<T>() where T : Entity
+        public T As<T>() where T : class
         {
             return this as T;
         }
@@ -129,7 +130,7 @@ namespace EGamePlay
             component.Entity = this;
             component.IsDisposed = false;
             Components.Add(typeof(T), component);
-            Master.AllComponents.Add(component);
+            ECSNode.AllComponents.Add(component);
             if (EnableLog) Log.Debug($"{GetType().Name}->AddComponent, {typeof(T).Name}");
             component.Awake();
             component.Setup();
@@ -147,7 +148,7 @@ namespace EGamePlay
             component.Entity = this;
             component.IsDisposed = false;
             Components.Add(typeof(T), component);
-            Master.AllComponents.Add(component);
+            ECSNode.AllComponents.Add(component);
             if (EnableLog) Log.Debug($"{GetType().Name}->AddComponent, {typeof(T).Name} initData={initData}");
             component.Awake(initData);
             component.Setup(initData);
@@ -204,23 +205,23 @@ namespace EGamePlay
             return null;
         }
 
-        public T Get<T>() where T : Component
-        {
-            if (Components.TryGetValue(typeof(T), out var component))
-            {
-                return component as T;
-            }
-            return null;
-        }
+        //public T GetComponent<T>() where T : Component
+        //{
+        //    if (Components.TryGetValue(typeof(T), out var component))
+        //    {
+        //        return component as T;
+        //    }
+        //    return null;
+        //}
 
-        public Component Get(Type componentType)
-        {
-            if (this.Components.TryGetValue(componentType, out var component))
-            {
-                return component;
-            }
-            return null;
-        }
+        //public Component Get(Type componentType)
+        //{
+        //    if (this.Components.TryGetValue(componentType, out var component))
+        //    {
+        //        return component;
+        //    }
+        //    return null;
+        //}
 
         public bool TryGet<T>(out T component) where T : Component
         {
@@ -281,6 +282,7 @@ namespace EGamePlay
         public void RemoveChild(Entity child)
         {
             Children.Remove(child);
+            Id2Children.Remove(child.Id);
             if (Type2Children.ContainsKey(child.GetType())) Type2Children[child.GetType()].Remove(child);
         }
 

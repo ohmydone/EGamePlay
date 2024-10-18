@@ -30,7 +30,7 @@ namespace EGamePlay.Combat
     /// <summary>
     /// 治疗行动
     /// </summary>
-    public class CureAction : Entity, IActionExecution
+    public class CureAction : Entity, IActionExecute
     {
         public CureEffect CureEffect => SourceAssignAction.AbilityEffect.EffectConfig as CureEffect;
         /// 治疗数值
@@ -43,7 +43,7 @@ namespace EGamePlay.Combat
         /// 行动实体
         public CombatEntity Creator { get; set; }
         /// 目标对象
-        public CombatEntity Target { get; set; }
+        public Entity Target { get; set; }
 
 
         public void FinishAction()
@@ -57,17 +57,22 @@ namespace EGamePlay.Combat
             if (SourceAssignAction != null && SourceAssignAction.AbilityEffect != null)
             {
                 CureValue = SourceAssignAction.AbilityEffect.GetComponent<EffectCureComponent>().GetCureValue();
+                var healthComp = Target.GetComponent<HealthPointComponent>();
+                if (CureValue + healthComp.Value > healthComp.MaxValue)
+                {
+                    CureValue = healthComp.MaxValue - healthComp.Value;
+                }
             }
         }
 
         public void ApplyCure()
         {
-            //Log.Debug("CureAction ApplyCure");
             PreProcess();
 
-            if (Target.CurrentHealth.IsFull() == false)
+            var healthComp = Target.GetComponent<HealthPointComponent>();
+            if (healthComp.IsFull() == false)
             {
-                Target.ReceiveCure(this);
+                healthComp.ReceiveCure(this);
             }
 
             PostProcess();
@@ -79,7 +84,7 @@ namespace EGamePlay.Combat
         private void PostProcess()
         {
             Creator.TriggerActionPoint(ActionPointType.PostGiveCure, this);
-            Target.TriggerActionPoint(ActionPointType.PostReceiveCure, this);
+            Target.GetComponent<ActionPointComponent>().TriggerActionPoint(ActionPointType.PostReceiveCure, this);
         }
     }
 }

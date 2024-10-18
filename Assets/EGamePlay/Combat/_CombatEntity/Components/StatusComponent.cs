@@ -6,72 +6,73 @@ namespace EGamePlay.Combat
     /// 
     /// </summary>
     public class StatusComponent : Component
-	{
-        public CombatEntity CombatEntity => GetEntity<CombatEntity>();
-        public List<StatusAbility> Statuses { get; set; } = new List<StatusAbility>();
-        public Dictionary<string, List<StatusAbility>> TypeIdStatuses { get; set; } = new Dictionary<string, List<StatusAbility>>();
+    {
+        public List<Ability> Statuses { get; set; } = new List<Ability>();
+        public Dictionary<string, List<Ability>> TypeIdStatuses { get; set; } = new Dictionary<string, List<Ability>>();
 
 
-        public StatusAbility AttachStatus(object configObject)
+        public Ability AttachStatus(object configObject)
         {
-            var status = CombatEntity.AttachAbility<StatusAbility>(configObject);
-            if (!TypeIdStatuses.ContainsKey(status.StatusConfig.ID))
+            var statusAbility = Entity.GetComponent<AbilityComponent>().AttachAbility(configObject);
+            var statusConfigID = statusAbility.Config.KeyName;
+            if (!TypeIdStatuses.ContainsKey(statusConfigID))
             {
-                TypeIdStatuses.Add(status.StatusConfig.ID, new List<StatusAbility>());
+                TypeIdStatuses.Add(statusConfigID, new List<Ability>());
             }
-            TypeIdStatuses[status.StatusConfig.ID].Add(status);
-            Statuses.Add(status);
-            return status;
+            TypeIdStatuses[statusConfigID].Add(statusAbility);
+            Statuses.Add(statusAbility);
+            return statusAbility;
         }
 
-        public void OnStatusRemove(StatusAbility statusAbility)
+        public void RemoveBuff(Ability buff)
         {
-            TypeIdStatuses[statusAbility.StatusConfig.ID].Remove(statusAbility);
-            if (TypeIdStatuses[statusAbility.StatusConfig.ID].Count == 0)
+            this.Publish(new RemoveStatusEvent() { Entity = this.Entity, Status = buff, StatusId = buff.Id });
+            var keyName = buff.Config.KeyName;
+            TypeIdStatuses[keyName].Remove(buff);
+            if (TypeIdStatuses[keyName].Count == 0)
             {
-                TypeIdStatuses.Remove(statusAbility.StatusConfig.ID);
+                TypeIdStatuses.Remove(keyName);
             }
-            Statuses.Remove(statusAbility);
-            this.Publish(new RemoveStatusEvent() { CombatEntity = CombatEntity, Status = statusAbility, StatusId = statusAbility.Id });
+            Statuses.Remove(buff);
+            Entity.GetComponent<AbilityComponent>().RemoveAbility(buff);
         }
 
-        public void OnAddStatus(StatusAbility statusAbility)
+        public bool HasStatus(string statusTypeId)
         {
-
+            return TypeIdStatuses.ContainsKey(statusTypeId);
         }
 
-        public void OnRemoveStatus(StatusAbility statusAbility)
+        public Ability GetStatus(string statusTypeId)
         {
-
+            return TypeIdStatuses[statusTypeId][0];
         }
 
-        public void OnStatusesChanged(StatusAbility statusAbility)
+        public void OnStatusesChanged(Ability statusAbility)
         {
-            var parentEntity = CombatEntity;
+            var parentEntity = statusAbility.ParentEntity;
 
             var tempActionControl = ActionControlType.None;
-            //var statuses = CombatEntity.GetTypeChildren<StatusAbility>();
-            //Log.Debug($"OnStatusesChanged {statuses.Length}");
-            foreach (var item in CombatEntity.GetTypeChildren<StatusAbility>())
+            foreach (var item in Statuses)
             {
                 if (!item.Enable)
                 {
                     continue;
                 }
-                foreach (var effect in item.Get<AbilityEffectComponent>().AbilityEffects)
+                foreach (var effect in item.GetComponent<AbilityEffectComponent>().AbilityEffects)
                 {
                     if (effect.Enable && effect.TryGet(out EffectActionControlComponent actionControlComponent))
                     {
-                        //Log.Debug($"{tempActionControl} {actionControlComponent.ActionControlEffect.ActionControlType}");
                         tempActionControl = tempActionControl | actionControlComponent.ActionControlEffect.ActionControlType;
                     }
                 }
             }
 
-            parentEntity.ActionControlType = tempActionControl;
-            var moveForbid = parentEntity.ActionControlType.HasFlag(ActionControlType.MoveForbid);
-            parentEntity.GetComponent<MotionComponent>().Enable = !moveForbid;
-            //Log.Debug($"OnStatusesChanged {tempActionControl} moveForbid={moveForbid}");
+            if (parentEntity is CombatEntity combatEntity)
+            {
+                combatEntity.ActionControlType = tempActionControl;
+                var moveForbid = combatEntity.ActionControlType.HasFlag(ActionControlType.MoveForbid);
+                combatEntity.GetComponent<MotionComponent>().Enable = !moveForbid;
+            }
         }
-	}
+    }
 }

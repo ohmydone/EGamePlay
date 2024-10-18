@@ -7,11 +7,12 @@ using Sirenix.OdinInspector;
 namespace EGamePlay.Combat
 {
     /// <summary>
-    /// 行动点，一次战斗行动<see cref="IActionExecution"/>会触发战斗实体一系列的行动点<see cref="ActionPoint"/>
+    /// 行动点，一次战斗行动<see cref="IActionExecute"/>会触发战斗实体一系列的行动点<see cref="ActionPoint"/>
     /// </summary>
     public sealed class ActionPoint
     {
         public List<Action<Entity>> Listeners { get; set; } = new List<Action<Entity>>();
+        public List<ActionPointObserveComponent> Observers { get; set; } = new List<ActionPointObserveComponent>();
 
 
         public void AddListener(Action<Entity> action)
@@ -24,21 +25,39 @@ namespace EGamePlay.Combat
             Listeners.Remove(action);
         }
 
-        public void TriggerAllActions(Entity actionExecution)
+        public void AddObserver(ActionPointObserveComponent action)
         {
-            if (Listeners.Count == 0)
+            Observers.Add(action);
+        }
+
+        public void RemoveObserver(ActionPointObserveComponent action)
+        {
+            Observers.Remove(action);
+        }
+
+        public void TriggerAllObservers(Entity actionExecution)
+        {
+            if (Listeners.Count > 0)
             {
-                return;
+                for (int i = Listeners.Count - 1; i >= 0; i--)
+                {
+                    var item = Listeners[i];
+                    item.Invoke(actionExecution);
+                }
             }
-            for (int i = Listeners.Count - 1; i >= 0; i--)
+            if (Observers.Count > 0)
             {
-                var item = Listeners[i];
-                item.Invoke(actionExecution);
+                for (int i = Observers.Count - 1; i >= 0; i--)
+                {
+                    var item = Observers[i];
+                    item.OnTrigger(actionExecution);
+                }
             }
         }
     }
 
     [Flags]
+    [LabelText("行动点类型")]
     public enum ActionPointType
     {
         [LabelText("（空）")]
@@ -80,7 +99,7 @@ namespace EGamePlay.Combat
         PostReceiveAttack = 1 << 14,
 
         [LabelText("起跳前")]
-        PreJumpTo= 1 << 15,
+        PreJumpTo = 1 << 15,
         [LabelText("起跳后")]
         PostJumpTo = 1 << 16,
 
@@ -126,6 +145,24 @@ namespace EGamePlay.Combat
             }
         }
 
+        public void AddObserver(ActionPointType actionPointType, ActionPointObserveComponent action)
+        {
+            if (!ActionPoints.ContainsKey(actionPointType))
+            {
+                ActionPoints.Add(actionPointType, new ActionPoint());
+            }
+            ActionPoints[actionPointType].AddObserver(action);
+            //Log.Debug($"AddObserver {actionPointType} {ActionPoints[actionPointType].Observers.Count}");
+        }
+
+        public void RemoveObserver(ActionPointType actionPointType, ActionPointObserveComponent action)
+        {
+            if (ActionPoints.ContainsKey(actionPointType))
+            {
+                ActionPoints[actionPointType].RemoveObserver(action);
+            }
+        }
+
         public ActionPoint GetActionPoint(ActionPointType actionPointType)
         {
             if (ActionPoints.TryGetValue(actionPointType, out var actionPoint)) ;
@@ -134,9 +171,14 @@ namespace EGamePlay.Combat
 
         public void TriggerActionPoint(ActionPointType actionPointType, Entity actionExecution)
         {
-            if (ActionPoints.TryGetValue(actionPointType, out var actionPoint))
+            //Log.Debug($"TriggerActionPoint {actionPointType}");
+            foreach (var item in ActionPoints)
             {
-                actionPoint.TriggerAllActions(actionExecution);
+                if (item.Key.HasFlag(actionPointType))
+                {
+                    //Log.Debug($"TriggerActionPoint {actionPointType} {item.Value.Observers.Count}");
+                    item.Value.TriggerAllObservers(actionExecution);
+                }
             }
         }
     }

@@ -35,8 +35,7 @@ namespace EGamePlay.Combat
         {
             if (TryGet(out AbilityProbabilityTriggerComponent probabilityTriggerComponent))
             {
-                var r = ET.RandomHelper.RandomNumber(0, 10000);
-                //Log.Debug($"IsAbilityEffectTrigger {r} < {probabilityTriggerComponent.Probability}");
+                var r = GameUtils.RandomHelper.RandomNumber(0, 10000);
                 return r < probabilityTriggerComponent.Probability;
             }
             return false;
@@ -44,23 +43,22 @@ namespace EGamePlay.Combat
 
         public void TryBlock(Entity action)
         {
-            //Log.Debug($"TryBlock");
-            if (IsAbilityEffectTrigger())
-            {
-                if (TryMakeAction(out var attackBlockAction))
-                {
-                    attackBlockAction.ActionAbility = this;
-                    attackBlockAction.AttackExecution = action.As<AttackAction>().AttackExecution;
-                    attackBlockAction.ApplyBlock();
-                }
-            }
+            //if (IsAbilityEffectTrigger())
+            //{
+            //    if (TryMakeAction(out var attackBlockAction))
+            //    {
+            //        attackBlockAction.ActionAbility = this;
+            //        attackBlockAction.AttackExecution = action.As<AttackAction>().AttackExecution;
+            //        attackBlockAction.ApplyBlock();
+            //    }
+            //}
         }
     }
 
     /// <summary>
     /// 格挡行动
     /// </summary>
-    public class AttackBlockAction : Entity, IActionExecution
+    public class AttackBlockAction : Entity, IActionExecute
     {
         /// 行动能力
         public Entity ActionAbility { get; set; }
@@ -69,8 +67,8 @@ namespace EGamePlay.Combat
         /// 行动实体
         public CombatEntity Creator { get; set; }
         /// 目标对象
-        public CombatEntity Target { get; set; }
-        public AttackExecution AttackExecution { get; set; }
+        public Entity Target { get; set; }
+        //public AttackExecution AttackExecution { get; set; }
 
 
         public void FinishAction()
@@ -88,7 +86,7 @@ namespace EGamePlay.Combat
         {
             PreProcess();
 
-            AttackExecution.SetBlocked();
+            //AttackExecution.SetBlocked();
 
             PostProcess();
 
