@@ -9,9 +9,11 @@
 
 1、将SkillAbility和StatusAbility统一为Ability，实体类和配置表都统一，通过配置表里的Type字段区分Skill和Buff
 
-2、AbilityConfigObject的效果配置拆分为```触发点```和```效果列表```分开配置，通过触发点去触发效果，触发点分为主动触发和被动触发，主动触发通过技能执行体触发，其余的都是被动触发，比如大多数的buff触发机制
+2、不再分Excel流程和ScriptableObject流程，2.0的效果结构更复杂，Excel不好表达，统一为Excel做技能信息配置，SO做效果配置AbilityConfigObject
 
-3、执行体里的碰撞体配置改为更方便扩展的效果列表配置
+3、AbilityConfigObject的效果配置拆分为```触发点```和```效果列表```分开配置，通过触发点去触发效果，触发点分为主动触发和被动触发，主动触发通过技能执行体触发，其余的都是被动触发，比如大多数的buff触发机制
+
+4、执行体里的碰撞体配置改为更方便扩展的效果列表配置
 
 ---
 [![Unity Version: 2023.2.20f1](https://img.shields.io/badge/Unity-2023.2.20f1-333333.svg?logo=unity)](https://unity3d.com/get-unity/download/archive) [![Status: Work-in-progress](https://img.shields.io/badge/status-work--in--progress-orange)](https://github.com/m969/EGamePlay/projects/1)
@@ -71,6 +73,16 @@
 - EGamePlay/Excel
 
 ---
+## 如何将EGamePlay移植到ET框架里
+- 把EGamePlay/Assets/Editor移到ET.Editor程序集下
+- 把EGamePlay/Assets/EGamePlay移到Model程序集下 
+- 把EGamePlay/Assets/EGamePlay.Unity移到ModelView程序集下 
+- 最后要添加条件编译EGAMEPLAY_ET
+
+可以参考这个联网同步demo https://github.com/m969/AOGame
+
+## EGamePlay demo示意图
+---
 
 <img src="Readme/EGamePlay.gif" width="60%">
 <img src="Readme/EGamePlayTurn.gif" width="60%">
@@ -81,7 +93,7 @@
 ---
 ## 基于Odin和ScriptableObject实现的灵活的技能、buff配置工具
 
-<img src="Readme/AbilityObjectConfig.png" width="80%">
+<img src="Readme/AbilityObjectSkill2.png" width="50%">
 <img src="Readme/SkillEditorWindow.png" width="100%">
 
 ### 技能Excel配置
@@ -91,9 +103,6 @@
 ## EGamePlay战斗框架技术讨论交流qq群：763696367
 对战斗感兴趣的同学可以进群一起探讨更合适、高效的战斗框架实现
 <br>对EGamePlay有任何疑问或建议可以进群反馈，或是提在[Discussions](https://github.com/m969/EGamePlay/discussions)
-
----
-联网同步demo在这里 https://github.com/m969/AOGame
 
 ---
 ## 其他类似项目
